@@ -5,7 +5,7 @@ services:
       - '8000:8000' # 호스트:컨테이너
     # 환경변수파일 사용
     env_file:
-      - .env.local
+      - .env
     environment:
       # print() 즉시 반영, 출력 버퍼링 끔
       - PYTHONUNBUFFERED=1
