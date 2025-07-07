@@ -1,0 +1,53 @@
+name: Deploy FastAPI App
+
+on:
+  push:
+    # main 브랜치에 push 발생하면 실행
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy FastAPI to EC2
+    # 깃헙액션이 우분투 최신, 안정적인 버전으로 실행
+    runs-on: ubuntu-latest
+
+    steps:
+      # 저장소 소스 가져오기
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 컨테이너마다 키 등록 및 ssh인증 각각 해야함
+      # 호스트 키 등록
+      - name: Add EC2 Host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # ssh agent로 ssh 인증 준비
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      # 깃헙 시크릿 정보로 .env 생성
+      - name: Generate .env file
+        run: |
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+
+      # 깃헙 소스 코드를 EC2 /ubuntu/fastapi-app 경로로 복사, 서비스마다 달라야함
+      - name: Upload FastAPI source code to EC2
+        run: |
+          rsync -avz --exclude __pycache__ --exclude .git ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/fastapi-app
+
+      # .env파일 EC2 업로드
+      - name: Upload .env to EC2
+        run: |
+          scp .env ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/fastapi-app/.env
+
+      - name: Deploy FastAPI on EC2
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/fastapi-app
+            sudo docker-compose -f docker-compose.yml down
+            sudo docker-compose -f docker-compose.yml up -d --build
+          EOF

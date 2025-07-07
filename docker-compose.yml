@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - '8000:8000' # 호스트:컨테이너
+    # 환경변수파일 사용
+    env_file:
+      - .env.local
+    environment:
+      # print() 즉시 반영, 출력 버퍼링 끔
+      - PYTHONUNBUFFERED=1
+    # 컨테이너가 오류로 중지되거나 서버 재부팅시 자동 재시작, docker stop인 경우 중지됨
+    restart: unless-stopped
