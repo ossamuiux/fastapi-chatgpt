@@ -6,7 +6,7 @@ from routers import items, index, chat
 
 
 # fastapi 인스턴스 생성
-app = FastAPI(docs_url="/chat/docs")
+app = FastAPI(docs_url="/docs")
 
 # 미들웨어 설정
 app.add_middleware(
